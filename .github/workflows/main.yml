@@ -42,8 +42,12 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=${{ github.event.inputs.tags || 'latest' }}
+            # 无论什么情况都推送到 latest
+            type=raw,value=latest
+            # 同时保留 SHA 标签方便回滚
             type=sha
+            # 如果你有手动输入 tag，也加上它
+            ${{ github.event.inputs.tags }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5

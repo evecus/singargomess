@@ -15,7 +15,7 @@ RUN curl -Lo /usr/local/bin/cloudflared https://github.com/cloudflare/cloudflare
 
 # 最终镜像
 FROM alpine:latest
-RUN apk add --no-cache jq coreutils bash
+RUN apk add --no-cache jq coreutils bash curl
 
 COPY --from=builder /usr/local/bin/sing-box /usr/local/bin/
 COPY --from=builder /usr/local/bin/cloudflared /usr/local/bin/

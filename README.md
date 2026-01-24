@@ -5,4 +5,4 @@ docker run -d \
   -e DOMAIN="你的Cloudflare域名" \
   -e TOKEN="你的Argo隧道Token" \
   -e PORT="8080" \
-  ghcr.io/evecus/singargo:sha-26e6d18
+  ghcr.io/evecus/singargo:latest

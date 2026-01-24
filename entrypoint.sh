@@ -1,18 +1,19 @@
 #!/bin/bash
 
-# 检查必要变量
+# 检查必要环境变量
 if [ -z "$UUID" ] || [ -z "$DOMAIN" ] || [ -z "$TOKEN" ]; then
     echo "错误: 请确保设置了 UUID, DOMAIN 和 TOKEN 环境变量。"
     exit 1
 fi
 
+# 固定 WebSocket 路径
+WS_PATH="/YDT4hf6q3ndbRzwve1MX"
+PORT="${PORT:-8080}"
+
 # 1. 生成 sing-box 配置文件
 cat <<EOF > /etc/sing-box.json
 {
-  "log": {
-    "level": "info",
-    "timestamp": true
-  },
+  "log": { "level": "warn", "timestamp": true },
   "inbounds": [
     {
       "type": "vmess",
@@ -22,9 +23,7 @@ cat <<EOF > /etc/sing-box.json
       "users": [{ "uuid": "${UUID}", "alterId": 0 }],
       "transport": {
         "type": "ws",
-        "path": "/YDT4hf6q3ndbRzwve1MX",
-        "max_early_data": 0,
-        "early_data_header_name": "Sec-WebSocket-Protocol"
+        "path": "${WS_PATH}"
       }
     }
   ],
@@ -32,11 +31,11 @@ cat <<EOF > /etc/sing-box.json
 }
 EOF
 
-# 2. 生成 VMess 链接 (Base64 编码)
+# 2. 生成 VMess 链接
 VMESS_CONFIG=$(cat <<EOF
 {
   "v": "2",
-  "ps": "Argo-VMess-${DOMAIN}",
+  "ps": "Argo-${DOMAIN}",
   "add": "www.visa.com",
   "port": "443",
   "id": "${UUID}",
@@ -45,7 +44,7 @@ VMESS_CONFIG=$(cat <<EOF
   "net": "ws",
   "type": "none",
   "host": "${DOMAIN}",
-  "path": "/YDT4hf6q3ndbRzwve1MX",
+  "path": "${WS_PATH}",
   "tls": "tls",
   "sni": "${DOMAIN}",
   "alpn": ""
@@ -54,18 +53,36 @@ EOF
 )
 VMESS_LINK="vmess://$(echo -n "$VMESS_CONFIG" | base64 -w 0)"
 
-# 3. 输出日志信息
-echo "---------------------------------------------------"
-echo "服务启动中..."
-echo "节点域名: ${DOMAIN}"
-echo "监听端口: ${PORT}"
-echo "UUID: ${UUID}"
-echo "---------------------------------------------------"
-echo "VMess 节点链接:"
-echo "${VMESS_LINK}"
-echo "---------------------------------------------------"
+# 3. 启动服务 (静默运行)
+cloudflared tunnel --no-autoupdate run --token ${TOKEN} > /dev/null 2>&1 &
+sing-box run -c /etc/sing-box.json > /dev/null 2>&1 &
 
-# 4. 同时运行 Argo Tunnel 和 sing-box
-# 使用 --no-autoupdate 避免 docker 环境内更新失败
-cloudflared tunnel --no-autoupdate run --token ${TOKEN} &
-sing-box run -c /etc/sing-box.json
+# 4. 检测连接状态并输出结果
+echo "正在启动服务并连接 Argo 隧道..."
+
+# 循环探测域名是否生效
+MAX_RETRIES=25
+COUNT=0
+while [ $COUNT -lt $MAX_RETRIES ]; do
+    # 探测域名
+    STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" "https://${DOMAIN}" --max-time 2)
+    
+    if [ "$STATUS" != "000" ]; then
+        echo "---------------------------------------------------"
+        echo "✅ Argo 隧道连接成功！"
+        echo "🚀 服务已启动 (Sing-box 运行中)"
+        echo "---------------------------------------------------"
+        echo "固定 WS 路径: ${WS_PATH}"
+        echo "VMess 节点链接:"
+        echo "${VMESS_LINK}"
+        echo "---------------------------------------------------"
+        # 保持容器不退出并等待后台进程
+        wait
+        exit 0
+    fi
+    sleep 2
+    COUNT=$((COUNT + 1))
+done
+
+echo "❌ 隧道连接失败，请检查 TOKEN 和域名配置。"
+exit 1

@@ -22,7 +22,7 @@ cat <<EOF > /etc/sing-box.json
       "users": [{ "uuid": "${UUID}", "alterId": 0 }],
       "transport": {
         "type": "ws",
-        "path": "/",
+        "path": "/YDT4hf6q3ndbRzwve1MX",
         "max_early_data": 0,
         "early_data_header_name": "Sec-WebSocket-Protocol"
       }
@@ -45,7 +45,7 @@ VMESS_CONFIG=$(cat <<EOF
   "net": "ws",
   "type": "none",
   "host": "${DOMAIN}",
-  "path": "/",
+  "path": "/YDT4hf6q3ndbRzwve1MX",
   "tls": "tls",
   "sni": "${DOMAIN}",
   "alpn": ""

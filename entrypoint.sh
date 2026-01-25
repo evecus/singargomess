@@ -7,7 +7,7 @@ if [ -z "$UUID" ] || [ -z "$DOMAIN" ] || [ -z "$TOKEN" ]; then
 fi
 
 # 固定 WebSocket 路径
-WS_PATH="/YDT4hf6q3ndbRzwve1MX"
+WS_PATH="/YDT4hf6q3iws3mj29uued74ysjw"
 PORT="${PORT:-8080}"
 
 # 1. 生成 sing-box 配置文件
